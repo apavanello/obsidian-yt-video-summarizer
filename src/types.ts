@@ -2,8 +2,9 @@ import { GEMINI_MODELS } from './constants';
 
 /**
  * List of supported Gemini models
+ * Can be either one of the predefined models or any string for dynamically fetched models
  */
-export type GeminiModel = typeof GEMINI_MODELS[number];
+export type GeminiModel = typeof GEMINI_MODELS[number] | string;
 
 /** Represents the plugin settings */
 export interface PluginSettings {

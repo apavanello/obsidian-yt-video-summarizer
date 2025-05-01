@@ -27,7 +27,7 @@ export class SettingsTab extends PluginSettingTab {
 	 * This method is responsible for rendering the settings controls
 	 * and handling user interactions.
 	 */
-	display(): void {
+	async display(): Promise<void> {
 		const { containerEl } = this;
 		containerEl.empty();
 
@@ -46,24 +46,91 @@ export class SettingsTab extends PluginSettingTab {
 					})
 			);
 
-		// Setting for Gemini Model
-		new Setting(containerEl)
+		// Create a loading message for models
+		const modelSetting = new Setting(containerEl)
 			.setName('Gemini model')
-			.setDesc('Select Gemini model version')
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOptions(
-						Object.fromEntries(
-							GEMINI_MODELS.map((model) => [model, model])
-						)
-					)
-					.setValue(this.plugin.settings.selectedModel)
-					.onChange(async (value) => {
-						await this.plugin.updateSettings({
-							selectedModel: value as GeminiModel,
+			.setDesc('Select Gemini model version');
+		
+		const createModelDropdown = async () => {
+			// Clear existing components if any
+			modelSetting.components = [];
+			
+			// Try to fetch models from API if API key is available
+			if (this.plugin.settings.geminiApiKey) {
+				try {
+					// Show loading message
+					const loadingEl = modelSetting.descEl.createSpan();
+					loadingEl.setText(' (Loading available models...)');
+
+					// Get models from the Gemini API
+					const geminiService = this.plugin.getGeminiService();
+					const availableModels = await geminiService.getGeminiModels();
+
+					// Remove loading message
+					loadingEl.remove();
+
+					// Add dropdown with fetched models
+					if (availableModels.length > 0) {
+						modelSetting.addDropdown((dropdown) =>
+							dropdown
+								.addOptions(
+									Object.fromEntries(
+										availableModels.map((model) => [model, model])
+									)
+								)
+								.setValue(this.plugin.settings.selectedModel)
+								.onChange(async (value) => {
+									await this.plugin.updateSettings({
+										selectedModel: value as GeminiModel,
+									});
+								})
+						);
+
+						// Add reload button
+						modelSetting.addButton((button) =>
+							button
+								.setIcon('refresh-ccw')
+								.setTooltip('Reload available models')
+								.onClick(async () => {
+									await createModelDropdown();
+									new Notice('Models refreshed');
+								})
+						);
+
+						// Add a note that models were fetched from API
+						modelSetting.descEl.createSpan({
+							text: ' (Models fetched from Gemini API)',
+							cls: 'setting-item-description'
 						});
+						
+						return;
+					}
+				} catch (error) {
+					// If there's an error, fall back to hardcoded models
+					console.error('Failed to fetch Gemini models:', error);
+
+					// Add a note about the error
+					modelSetting.descEl.createSpan({
+						text: ` (Could not fetch models: ${error.message})`,
+						cls: 'setting-item-description'
+					});
+				}
+			}
+
+			// Add reload button for fallback case as well
+			modelSetting.addButton((button) =>
+				button
+					.setIcon('refresh-ccw')
+					.setTooltip('Reload available models')
+					.onClick(async () => {
+						await createModelDropdown();
+						new Notice('Models refreshed');
 					})
 			);
+		};
+		
+		// Initial creation of model dropdown
+		await createModelDropdown();
 
 		// Setting for Summary Prompt
 		new Setting(containerEl)

@@ -8,6 +8,7 @@ export const GEMINI_MODELS = [
 	'gemini-1.5-flash',
 	'gemini-1.5-flash-8b',
 	'gemini-1.5-pro',
+
 ] as const;
 
 // Default prompt for video analysis

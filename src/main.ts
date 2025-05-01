@@ -52,10 +52,10 @@ export class YouTubeSummarizerPlugin extends Plugin {
 
 		// Initialize youtube service
 		this.youtubeService = new YouTubeService();
-	
+
 		// Load settings
 		this.settings = await this.storageService.getSettings();
-		
+
 		// Initialize prompt service
 		this.promptService = new PromptService(this.settings.customPrompt);
 
@@ -135,6 +135,15 @@ export class YouTubeSummarizerPlugin extends Plugin {
 		// Reinitializes the Gemini service
 		this.geminiService = new GeminiService(this.settings);
 		this.promptService = new PromptService(this.settings.customPrompt);
+	}
+
+	/**
+	 * Gets the Gemini service instance.
+	 * This method provides access to the Gemini service for other components.
+	 * @returns {GeminiService} The Gemini service instance.
+	 */
+	getGeminiService(): GeminiService {
+		return this.geminiService;
 	}
 
 	/**
